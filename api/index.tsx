@@ -301,7 +301,7 @@ export const app = new Frog<{ State: State }>({
   initialState: {
     matchDataArr: [],
   },
-  hub: pinata(),
+  // hub: pinata(),
 });
 
 app.frame("/", (c) => {
@@ -343,7 +343,6 @@ app.frame("/check-fid", async (c) => {
   let matchData;
   const fid = c.frameData?.fid;
   if (fid) {
-    console.log("FID OK");
     try {
       const response = await axios.get(
         `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
@@ -351,7 +350,6 @@ app.frame("/check-fid", async (c) => {
           headers: { Authorization: `Bearer ${bearerToken}` },
         }
       );
-      console.log("userDATA OK");
       userData = response.data;
     } catch (error) {
       console.error(error);
@@ -372,7 +370,6 @@ app.frame("/check-fid", async (c) => {
         headers: { Authorization: `Bearer ${bearerToken}` },
       }
     );
-    console.log("IPFS HASH OK");
     ipfsHash = response.data.rows[0].ipfs_pin_hash;
   } catch (error) {
     console.log(error);
@@ -407,7 +404,6 @@ app.frame("/check-fid", async (c) => {
     const response = await axios.get(
       `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
     );
-    console.log("matchDATA OK");
     matchData = response.data;
   } catch (error) {
     console.log(error);
@@ -416,8 +412,6 @@ app.frame("/check-fid", async (c) => {
     //@ts-ignore
     previousState.matchDataArr = matchData;
   });
-  console.log("state OK");
-  console.log(matchData, "MATCH DATA")
   return c.res({
     image: (
       <div
@@ -470,7 +464,8 @@ app.frame("/check-fid", async (c) => {
           }}
         >
           <img
-            src={teamsData[matchData.ucs[60].w].logo}
+            //@ts-ignore
+            src={teamsData[state.matchDataArr.ucs[60].w].logo}
             alt=""
             width={200}
             height={200}
