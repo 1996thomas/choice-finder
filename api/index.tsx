@@ -9,14 +9,7 @@ dotenv.config();
 const bearerToken = process.env.BEARER_TOKEN;
 const gatewayToken = process.env.GATEWAY_TOKEN;
 
-interface TeamData {
-  [key: string]: {
-    logo: string;
-    name: string;
-  };
-}
-
-const teamsData: TeamData = {
+const teamsData: TeamsData = {
   "1": {
     logo: "/east/01_uconn.png",
     name: "Connecticut Huskies",
@@ -276,21 +269,40 @@ const teamsData: TeamData = {
   },
 };
 
-interface MatchData {
-  ucs: Array<{
-    w: string;
-    m: string;
+interface TeamInfo {
+  logo: string;
+  name: string;
+}
+
+interface PinListResponse {
+  rows: Array<{
+    ipfs_pin_hash: string;
   }>;
+}
+
+interface TeamsData {
+  [key: string]: TeamInfo;
+}
+
+interface Match {
+  w: string; // L'identifiant de l'équipe gagnante
+  m?: string; // Vous aviez cela dans votre interface, mais vous ne l'utilisez pas dans l'exemple donné
+}
+
+interface MatchData {
+  ucs: Match[];
 }
 
 interface State {
   matchDataArr: MatchData | null;
 }
+
 interface UserData {
   data: {
     username: string;
   };
 }
+
 const primaryColor = "#0087F7";
 
 const regionColor = {
@@ -308,7 +320,7 @@ export const app = new Frog<{ State: State }>({
   initialState: {
     matchDataArr: [],
   },
-  hub: pinata(),
+  // hub: pinata(),
 });
 
 app.frame("/", (c) => {
@@ -346,207 +358,84 @@ app.frame("/check-fid", async (c) => {
   const { deriveState } = c;
   let userData: UserData | null = null;
   const fid = c.frameData?.fid;
-  if (fid) {
-    try {
-      const response = await axios.get(
-        `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
-        {
-          headers: { Authorization: `Bearer ${bearerToken}` },
-        }
-      );
-      userData = response.data;
-    } catch (error) {
-      console.error(error);
-      return c.res({
-        image: (
-          <div style={{ display: "flex" }}>
-            <p style={{ color: "red" }}>Erreur lors de la requête</p>
-          </div>
-        ),
-      });
-    }
+
+  if (!fid) {
+    return handleError(c, "FID is missing or invalid.");
   }
-  let ipfsHash: string | undefined;
+
   try {
-    const response = await axios.get(
-      `https://api.pinata.cloud/data/pinList?metadata[name]=${userData?.data.username}'s choices`,
+    const userResponse = await axios.get<UserData>(
+      `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
       {
         headers: { Authorization: `Bearer ${bearerToken}` },
       }
     );
-    ipfsHash = response.data.rows[0].ipfs_pin_hash;
+    userData = userResponse.data;
   } catch (error) {
-    console.log(error);
-    return c.res({
-      image: (
-        <div style={{ display: "flex", height: "100%", width: "100%" }}>
-          <img
-            src="/background.png"
-            width={1200}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-            }}
-            alt=""
-          />
-          <p style={{ color: "red" }}>
-            Oops, we found no IPFS files rattached to your name
-          </p>
-        </div>
-      ),
-      intents: [
-        <Button action="/">Retry</Button>,
-        <Button.Link href="https://warpcast.com/eco/0x4ac9bc11">
-          Try it !
-        </Button.Link>,
-      ],
-    });
+    console.error(error);
+    return handleError(c, "Error retrieving user data.");
   }
+
+  let ipfsHash: string | undefined;
+  try {
+    const pinListResponse = await axios.get<PinListResponse>(
+      `https://api.pinata.cloud/data/pinList?metadata[name]=${encodeURIComponent(
+        userData.data.username
+      )}'s choices`,
+      {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+      }
+    );
+    if (pinListResponse.data.rows.length === 0) {
+      throw new Error("No IPFS hash found.");
+    }
+    ipfsHash = pinListResponse.data.rows[0].ipfs_pin_hash;
+  } catch (error) {
+    console.error(error);
+    return handleError(c, "No IPFS files attached to your name were found.");
+  }
+
   let matchData: MatchData | null = null;
   try {
-    const response = await axios.get(
-      `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
-    );
-    matchData = response.data as MatchData;
+    if (ipfsHash) {
+      const matchDataResponse = await axios.get<MatchData>(
+        `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
+      );
+      matchData = matchDataResponse.data;
+    }
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
-  const state = deriveState((previousState) => {
+
+  if (!matchData) {
+    return handleError(c, "Match data is not available.");
+  }
+
+  deriveState((previousState) => {
     previousState.matchDataArr = matchData;
   });
+
+  const finalists = [matchData.ucs[60].w, matchData.ucs[61].w];
+  const winner = matchData.ucs[62].w
+  console.log(finalists);
   return c.res({
     image: (
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           height: "100%",
           width: "100%",
-          paddingTop: "150px",
         }}
       >
-        <img
-          src="/background.png"
-          width={1200}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-          }}
-          alt=""
-        />
-        <img
-          style={{ position: "absolute", top: "55%", left: "42%" }}
-          src="/finalfourlogo.png"
-          width={200}
-          height={200}
-          alt=""
-        />
-        <p
-          style={{
-            fontSize: "3rem",
-            color: primaryColor,
-            textAlign: "center",
-            position: "absolute",
-            top: "10%",
-            left: "50%",
-            transform: "translateX(-50%)",
-          }}
-        >
-          Your final bracket
-        </p>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "2rem",
-            flex: 1,
-            paddingRight: "100px",
-          }}
-        >
-          <img
-            //@ts-ignore
-            src={teamsData[state.matchDataArr.ucs[60].w].logo}
-            alt=""
-            width={200}
-            height={200}
-          />
-          <p
-            style={
-              //@ts-ignore
-
-              matchData.ucs[60].w === matchData.ucs[62].w
-                ? {
-                    color: "green",
-                    fontSize: "2rem",
-                  }
-                : {
-                    color: "red",
-                    fontSize: "2rem",
-                  }
-            }
-          >
-            {
-              //@ts-ignore
-              teamsData[state.matchDataArr.ucs[60].w].name
-            }
+        {finalists.map((finalist) => (
+          <p style={{ fontSize: "2rem", color: primaryColor }}>
+            {teamsData[finalist].name}
           </p>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            flex: 1,
-            gap: "2rem",
-            paddingLeft: "100px",
-          }}
-        >
-          <img
-            //@ts-ignore
-
-            src={teamsData[state.matchDataArr.ucs[61].w].logo}
-            alt=""
-            width={200}
-            height={200}
-          />
-          <p
-            style={
-              //@ts-ignore
-
-              matchData.ucs[61].w === matchData.ucs[62].w
-                ? {
-                    color: "green",
-                    fontSize: "2rem",
-                  }
-                : {
-                    color: "red",
-                    fontSize: "2rem",
-                  }
-            }
-          >
-            {
-              //@ts-ignore
-
-              teamsData[state.matchDataArr.ucs[61].w].name
-            }
-          </p>
-        </div>
-        <p
-          style={{
-            fontSize: "1.5rem",
-            color: regionColor.midwest,
-            position: "absolute",
-            bottom: "1%",
-            left: "50%",
-            transform: "translateX(-50%)",
-          }}
-        >
-          check all your winner by region
-        </p>
+        ))}
+            <p style={{ fontSize: "2rem", color: primaryColor }}>{teamsData[winner].name}</p>
       </div>
     ),
     intents: [
@@ -557,6 +446,36 @@ app.frame("/check-fid", async (c) => {
     ],
   });
 });
+
+function handleError(c: any, message: string) {
+  return c.res({
+    image: (
+      <div
+        style={{
+          display: "flex",
+          height: "100%",
+          width: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <img
+          src="/background.png"
+          width={1200}
+          style={{ position: "absolute", top: 0, left: 0 }}
+          alt=""
+        />
+        <p style={{ color: "red" }}>{message}</p>
+      </div>
+    ),
+    intents: [
+      <Button action="/">Retry</Button>,
+      <Button.Link href="https://warpcast.com/eco/0x4ac9bc11">
+        Try it!
+      </Button.Link>,
+    ],
+  });
+}
 
 app.frame("/:regionName", (c) => {
   const regionName = c.req.param("regionName");
