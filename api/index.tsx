@@ -9,7 +9,14 @@ dotenv.config();
 const bearerToken = process.env.BEARER_TOKEN;
 const gatewayToken = process.env.GATEWAY_TOKEN;
 
-const teamsData = {
+interface TeamData {
+  [key: string]: {
+    logo: string;
+    name: string;
+  };
+}
+
+const teamsData: TeamData = {
   "1": {
     logo: "/east/01_uconn.png",
     name: "Connecticut Huskies",
@@ -268,22 +275,22 @@ const teamsData = {
     name: "Saint Peter's Peacocks",
   },
 };
-// Uncomment to use Edge Runtime.
-// export const config = {
-//   runtime: 'edge',
-// }
 
-type MatchResult = {
-  m: number;
-  w: number;
-};
+interface MatchData {
+  ucs: Array<{
+    w: string;
+    m: string;
+  }>;
+}
 
-type State = {
-  matchDataArr: {
-    ucs: MatchResult[];
+interface State {
+  matchDataArr: MatchData | null;
+}
+interface UserData {
+  data: {
+    username: string;
   };
-};
-
+}
 const primaryColor = "#0087F7";
 
 const regionColor = {
@@ -337,10 +344,7 @@ app.frame("/", (c) => {
 
 app.frame("/check-fid", async (c) => {
   const { deriveState } = c;
-  let userData;
-  let ipfsHash;
-  //@ts-ignore
-  let matchData: { ucs: any; };
+  let userData: UserData | null = null;
   const fid = c.frameData?.fid;
   if (fid) {
     try {
@@ -362,10 +366,10 @@ app.frame("/check-fid", async (c) => {
       });
     }
   }
-
+  let ipfsHash: string | undefined;
   try {
     const response = await axios.get(
-      `https://api.pinata.cloud/data/pinList?metadata[name]=${userData.data.username}'s choices`,
+      `https://api.pinata.cloud/data/pinList?metadata[name]=${userData?.data.username}'s choices`,
       {
         headers: { Authorization: `Bearer ${bearerToken}` },
       }
@@ -399,220 +403,225 @@ app.frame("/check-fid", async (c) => {
       ],
     });
   }
-
+  let matchData: MatchData | null = null;
   try {
     const response = await axios.get(
       `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
     );
-    matchData = response.data;
-    return c.res({
-      image: (
-        <div
-          style={{
-            display: "flex",
-            height: "100%",
-            width: "100%",
-            paddingTop: "150px",
-          }}
-        >
-          <img
-            src="/background.png"
-            width={1200}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-            }}
-            alt=""
-          />
-          <img
-            style={{ position: "absolute", top: "55%", left: "42%" }}
-            src="/finalfourlogo.png"
-            width={200}
-            height={200}
-            alt=""
-          />
-          <p
-            style={{
-              fontSize: "3rem",
-              color: primaryColor,
-              textAlign: "center",
-              position: "absolute",
-              top: "10%",
-              left: "50%",
-              transform: "translateX(-50%)",
-            }}
-          >
-            Your final bracket
-          </p>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "2rem",
-              flex: 1,
-              paddingRight: "100px",
-            }}
-          >
-            <img
-              //@ts-ignore
-              src={teamsData[matchData?.ucs[60].w].logo}
-              alt=""
-              width={200}
-              height={200}
-            />
-            <p
-              style={
-                matchData?.ucs[60].w === matchData?.ucs[62].w
-                  ? {
-                      color: "green",
-                      fontSize: "2rem",
-                    }
-                  : {
-                      color: "red",
-                      fontSize: "2rem",
-                    }
-              }
-            >
-              {
-                //@ts-ignore
-                teamsData[matchData?.ucs[60].w].name
-              }
-            </p>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              flex: 1,
-              gap: "2rem",
-              paddingLeft: "100px",
-            }}
-          >
-            <img
-              //@ts-ignore
-              src={teamsData[matchData.ucs[61].w].logo}
-              alt=""
-              width={200}
-              height={200}
-            />
-            <p
-              style={
-                matchData.ucs[61].w === matchData.ucs[62].w
-                  ? {
-                      color: "green",
-                      fontSize: "2rem",
-                    }
-                  : {
-                      color: "red",
-                      fontSize: "2rem",
-                    }
-              }
-            >
-              {
-                //@ts-ignore
-                teamsData[matchData.ucs[61].w].name
-              }
-            </p>
-          </div>
-          <p
-            style={{
-              fontSize: "1.5rem",
-              color: regionColor.midwest,
-              position: "absolute",
-              bottom: "1%",
-              left: "50%",
-              transform: "translateX(-50%)",
-            }}
-          >
-            check all your winner by region
-          </p>
-        </div>
-      ),
-      intents: [
-        <Button action="/east">East</Button>,
-        <Button action="/west">West</Button>,
-        <Button action="/south">South</Button>,
-        <Button action="/midwest">Midwest</Button>,
-      ],
-    });
+    matchData = response.data as MatchData;
   } catch (error) {
     console.log(error);
   }
   const state = deriveState((previousState) => {
     previousState.matchDataArr = matchData;
   });
-
   return c.res({
-    image:<div style={{display:'flex'}}></div>
-  })
+    image: (
+      <div
+        style={{
+          display: "flex",
+          height: "100%",
+          width: "100%",
+          paddingTop: "150px",
+        }}
+      >
+        <img
+          src="/background.png"
+          width={1200}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+          }}
+          alt=""
+        />
+        <img
+          style={{ position: "absolute", top: "55%", left: "42%" }}
+          src="/finalfourlogo.png"
+          width={200}
+          height={200}
+          alt=""
+        />
+        <p
+          style={{
+            fontSize: "3rem",
+            color: primaryColor,
+            textAlign: "center",
+            position: "absolute",
+            top: "10%",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          Your final bracket
+        </p>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "2rem",
+            flex: 1,
+            paddingRight: "100px",
+          }}
+        >
+          <img
+            //@ts-ignore
+            src={teamsData[state.matchDataArr.ucs[60].w].logo}
+            alt=""
+            width={200}
+            height={200}
+          />
+          <p
+            style={
+              //@ts-ignore
+
+              matchData.ucs[60].w === matchData.ucs[62].w
+                ? {
+                    color: "green",
+                    fontSize: "2rem",
+                  }
+                : {
+                    color: "red",
+                    fontSize: "2rem",
+                  }
+            }
+          >
+            {
+              //@ts-ignore
+              teamsData[state.matchDataArr.ucs[60].w].name
+            }
+          </p>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: 1,
+            gap: "2rem",
+            paddingLeft: "100px",
+          }}
+        >
+          <img
+            //@ts-ignore
+
+            src={teamsData[state.matchDataArr.ucs[61].w].logo}
+            alt=""
+            width={200}
+            height={200}
+          />
+          <p
+            style={
+              //@ts-ignore
+
+              matchData.ucs[61].w === matchData.ucs[62].w
+                ? {
+                    color: "green",
+                    fontSize: "2rem",
+                  }
+                : {
+                    color: "red",
+                    fontSize: "2rem",
+                  }
+            }
+          >
+            {
+              //@ts-ignore
+
+              teamsData[state.matchDataArr.ucs[61].w].name
+            }
+          </p>
+        </div>
+        <p
+          style={{
+            fontSize: "1.5rem",
+            color: regionColor.midwest,
+            position: "absolute",
+            bottom: "1%",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          check all your winner by region
+        </p>
+      </div>
+    ),
+    intents: [
+      <Button action="/east">East</Button>,
+      <Button action="/west">West</Button>,
+      <Button action="/south">South</Button>,
+      <Button action="/midwest">Midwest</Button>,
+    ],
+  });
 });
 
 app.frame("/:regionName", (c) => {
   const regionName = c.req.param("regionName");
   //@ts-ignore
+
   const color = regionColor[regionName];
-  const regionDataMap = {
-    east: {
-      firstRound: c.previousState.matchDataArr.ucs.slice(0, 8),
-      secondRound: c.previousState.matchDataArr.ucs.slice(32, 36),
-      sweet: c.previousState.matchDataArr.ucs.slice(48, 50),
-      elite: [c.previousState.matchDataArr.ucs[56]],
-    },
-    west: {
-      firstRound: c.previousState.matchDataArr.ucs.slice(8, 16),
-      secondRound: c.previousState.matchDataArr.ucs.slice(36, 40),
-      sweet: c.previousState.matchDataArr.ucs.slice(50, 52),
-      elite: [c.previousState.matchDataArr.ucs[57]],
-    },
-    south: {
-      firstRound: c.previousState.matchDataArr.ucs.slice(16, 24),
-      secondRound: c.previousState.matchDataArr.ucs.slice(40, 44),
-      sweet: c.previousState.matchDataArr.ucs.slice(52, 54),
-      elite: [c.previousState.matchDataArr.ucs[58]],
-    },
-    midwest: {
-      firstRound: c.previousState.matchDataArr.ucs.slice(24, 32),
-      secondRound: c.previousState.matchDataArr.ucs.slice(44, 48),
-      sweet: c.previousState.matchDataArr.ucs.slice(54, 56),
-      elite: [c.previousState.matchDataArr.ucs[59]],
-    },
-  };
+  let regionDataMap = {};
+  if (c.previousState.matchDataArr) {
+    regionDataMap = {
+      east: {
+        firstRound: c.previousState.matchDataArr.ucs.slice(0, 8),
+        secondRound: c.previousState.matchDataArr.ucs.slice(32, 36),
+        sweet: c.previousState.matchDataArr.ucs.slice(48, 50),
+        elite: [c.previousState.matchDataArr.ucs[56]],
+      },
+      west: {
+        firstRound: c.previousState.matchDataArr.ucs.slice(8, 16),
+        secondRound: c.previousState.matchDataArr.ucs.slice(36, 40),
+        sweet: c.previousState.matchDataArr.ucs.slice(50, 52),
+        elite: [c.previousState.matchDataArr.ucs[57]],
+      },
+      south: {
+        firstRound: c.previousState.matchDataArr.ucs.slice(16, 24),
+        secondRound: c.previousState.matchDataArr.ucs.slice(40, 44),
+        sweet: c.previousState.matchDataArr.ucs.slice(52, 54),
+        elite: [c.previousState.matchDataArr.ucs[58]],
+      },
+      midwest: {
+        firstRound: c.previousState.matchDataArr.ucs.slice(24, 32),
+        secondRound: c.previousState.matchDataArr.ucs.slice(44, 48),
+        sweet: c.previousState.matchDataArr.ucs.slice(54, 56),
+        elite: [c.previousState.matchDataArr.ucs[59]],
+      },
+    };
+  }
   //@ts-ignore
+
   const renderRound = (title, matches) => (
     <div style={{ display: "flex", gap: "1.3rem" }}>
       <p style={{ color: "white", fontSize: "2rem", width: "200px" }}>
         {title}
       </p>
-      {
-        //@ts-ignore
-        matches.map((match) => (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <img
-              width={96}
-              height={96}
-              style={{ border: `4px solid ${color}`, borderRadius: "50%" }}
-              //@ts-ignore
-              src={teamsData[match.w].logo}
-              alt=""
-            />
-          </div>
-        ))
-      }
+      {matches.map((match: { w: string | number }) => (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <img
+            width={96}
+            height={96}
+            style={{ border: `4px solid ${color}`, borderRadius: "50%" }}
+            src={teamsData[match.w].logo}
+            alt=""
+          />
+        </div>
+      ))}
     </div>
   );
+
   //@ts-ignore
+
   const regionData = regionDataMap[regionName];
 
   return c.res({
