@@ -415,8 +415,6 @@ app.frame("/check-fid", async (c) => {
     previousState.matchDataArr = matchData;
   });
 
-  const finalists = [matchData.ucs[60].w, matchData.ucs[61].w];
-  console.log(finalists);
   const safeGetTeamInfo = (teamId: string) =>
     teamsData[teamId] || { logo: "", name: "Unknown Team" };
   return c.res({
@@ -531,9 +529,8 @@ app.frame("/:regionName", (c) => {
       },
     };
   }
-  //@ts-ignore
 
-  const renderRound = (title, matches) => (
+  const renderRound = (title: string, matches: { w: string | number }[]) => (
     <div style={{ display: "flex", gap: "1.3rem" }}>
       <p style={{ color: "white", fontSize: "2rem", width: "200px" }}>
         {title}
