@@ -320,7 +320,7 @@ export const app = new Frog<{ State: State }>({
   initialState: {
     matchDataArr: [],
   },
-  // hub: pinata(),
+  hub: pinata(),
 });
 
 app.frame("/", (c) => {
