@@ -412,6 +412,9 @@ app.frame("/check-fid", async (c) => {
     //@ts-ignore
     previousState.matchDataArr = matchData;
   });
+  
+  //@ts-ignore
+  console.log(teamsData[matchData?.ucs[60].w].logo);
   return c.res({
     image: (
       <div
@@ -465,14 +468,14 @@ app.frame("/check-fid", async (c) => {
         >
           <img
             //@ts-ignore
-            src={teamsData[matchData.ucs[60].w].logo}
+            src={teamsData[matchData?.ucs[60].w].logo}
             alt=""
             width={200}
             height={200}
           />
           <p
             style={
-              matchData.ucs[60].w === matchData.ucs[62].w
+              matchData?.ucs[60].w === matchData?.ucs[62].w
                 ? {
                     color: "green",
                     fontSize: "2rem",
@@ -485,7 +488,7 @@ app.frame("/check-fid", async (c) => {
           >
             {
               //@ts-ignore
-              teamsData[matchData.ucs[60].w].name
+              teamsData[matchData?.ucs[60].w].name
             }
           </p>
         </div>
