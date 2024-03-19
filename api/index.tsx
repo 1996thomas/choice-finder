@@ -336,30 +336,32 @@ app.frame("/", (c) => {
 });
 
 app.frame("/check-fid", async (c) => {
-  const { deriveState } = c;
+  const { deriveState, verified } = c;
   let userData;
   let ipfsHash;
   //@ts-ignore
   let matchData;
   const fid = c.frameData?.fid;
-  if (fid) {
-    try {
-      const response = await axios.get(
-        `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
-        {
-          headers: { Authorization: `Bearer ${bearerToken}` },
-        }
-      );
-      userData = response.data;
-    } catch (error) {
-      console.error(error);
-      return c.res({
-        image: (
-          <div style={{ display: "flex" }}>
-            <p style={{ color: "red" }}>Erreur lors de la requête</p>
-          </div>
-        ),
-      });
+  if (verified) {
+    if (fid) {
+      try {
+        const response = await axios.get(
+          `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
+          {
+            headers: { Authorization: `Bearer ${bearerToken}` },
+          }
+        );
+        userData = response.data;
+      } catch (error) {
+        console.error(error);
+        return c.res({
+          image: (
+            <div style={{ display: "flex" }}>
+              <p style={{ color: "red" }}>Erreur lors de la requête</p>
+            </div>
+          ),
+        });
+      }
     }
   }
 
