@@ -416,8 +416,9 @@ app.frame("/check-fid", async (c) => {
   });
 
   const finalists = [matchData.ucs[60].w, matchData.ucs[61].w];
-  const winner = matchData.ucs[62].w
   console.log(finalists);
+  const safeGetTeamInfo = (teamId: string) =>
+    teamsData[teamId] || { logo: "", name: "Unknown Team" };
   return c.res({
     image: (
       <div
@@ -430,12 +431,31 @@ app.frame("/check-fid", async (c) => {
           width: "100%",
         }}
       >
-        {finalists.map((finalist) => (
-          <p style={{ fontSize: "2rem", color: primaryColor }}>
-            {teamsData[finalist].name}
-          </p>
-        ))}
-            <p style={{ fontSize: "2rem", color: primaryColor }}>{teamsData[winner].name}</p>
+        {matchData.ucs.slice(60, 62).map((match, index) => {
+          const team = safeGetTeamInfo(match.w);
+          return (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "2rem",
+              }}
+            >
+              <img src={team.logo} alt="" width={200} height={200} />
+              <p
+                style={{
+                  color: matchData?.ucs[62]?.w === match.w ? "green" : "red",
+                  fontSize: "2rem",
+                }}
+              >
+                {team.name}
+              </p>
+            </div>
+          );
+        })}
       </div>
     ),
     intents: [
