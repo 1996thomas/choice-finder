@@ -336,32 +336,32 @@ app.frame("/", (c) => {
 });
 
 app.frame("/check-fid", async (c) => {
-  const { deriveState, verified } = c;
+  const { deriveState } = c;
   let userData;
   let ipfsHash;
   //@ts-ignore
   let matchData;
   const fid = c.frameData?.fid;
-  if (verified) {
-    if (fid) {
-      try {
-        const response = await axios.get(
-          `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
-          {
-            headers: { Authorization: `Bearer ${bearerToken}` },
-          }
-        );
-        userData = response.data;
-      } catch (error) {
-        console.error(error);
-        return c.res({
-          image: (
-            <div style={{ display: "flex" }}>
-              <p style={{ color: "red" }}>Erreur lors de la requête</p>
-            </div>
-          ),
-        });
-      }
+  if (fid) {
+    console.log("FID OK")
+    try {
+      const response = await axios.get(
+        `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
+        {
+          headers: { Authorization: `Bearer ${bearerToken}` },
+        }
+      );
+      console.log("userDATA OK")
+      userData = response.data;
+    } catch (error) {
+      console.error(error);
+      return c.res({
+        image: (
+          <div style={{ display: "flex" }}>
+            <p style={{ color: "red" }}>Erreur lors de la requête</p>
+          </div>
+        ),
+      });
     }
   }
 
@@ -372,6 +372,7 @@ app.frame("/check-fid", async (c) => {
         headers: { Authorization: `Bearer ${bearerToken}` },
       }
     );
+    console.log("IPFS HASH OK")
     ipfsHash = response.data.rows[0].ipfs_pin_hash;
   } catch (error) {
     console.log(error);
@@ -406,6 +407,7 @@ app.frame("/check-fid", async (c) => {
     const response = await axios.get(
       `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
     );
+    console.log("matchDATA OK")
     matchData = response.data;
   } catch (error) {
     console.log(error);
@@ -414,6 +416,7 @@ app.frame("/check-fid", async (c) => {
     //@ts-ignore
     previousState.matchDataArr = matchData;
   });
+  console.log("state OK")
   return c.res({
     image: (
       <div
