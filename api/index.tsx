@@ -463,9 +463,9 @@ app.frame("/check-fid", async (c) => {
             paddingRight: "100px",
           }}
         >
-          <img 
-          //@ts-ignore
-            src={teamsData[state.matchDataArr.ucs[60].w].logo}
+          <img
+            //@ts-ignore
+            src={teamsData[matchData.ucs[60].w].logo}
             alt=""
             width={200}
             height={200}
@@ -485,7 +485,7 @@ app.frame("/check-fid", async (c) => {
           >
             {
               //@ts-ignore
-              teamsData[state.matchDataArr.ucs[60].w].name
+              teamsData[matchData.ucs[60].w].name
             }
           </p>
         </div>
@@ -502,7 +502,7 @@ app.frame("/check-fid", async (c) => {
         >
           <img
             //@ts-ignore
-            src={teamsData[state.matchDataArr.ucs[61].w].logo}
+            src={teamsData[matchData.ucs[61].w].logo}
             alt=""
             width={200}
             height={200}
@@ -522,7 +522,7 @@ app.frame("/check-fid", async (c) => {
           >
             {
               //@ts-ignore
-              teamsData[state.matchDataArr.ucs[61].w].name
+              teamsData[matchData.ucs[61].w].name
             }
           </p>
         </div>
