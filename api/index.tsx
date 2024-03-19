@@ -548,7 +548,7 @@ app.frame("/check-fid", async (c) => {
   });
 
   return c.res({
-    image:<div style={{"display:'flex"}}></div>
+    image:<div style={{display:'flex'}}></div>
   })
 });
 
