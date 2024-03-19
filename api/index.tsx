@@ -301,7 +301,7 @@ export const app = new Frog<{ State: State }>({
   initialState: {
     matchDataArr: [],
   },
-  // hub: pinata(),
+  hub: pinata(),
 });
 
 app.frame("/", (c) => {
@@ -463,8 +463,8 @@ app.frame("/check-fid", async (c) => {
             paddingRight: "100px",
           }}
         >
-          <img
-            //@ts-ignore
+          <img 
+          //@ts-ignore
             src={teamsData[state.matchDataArr.ucs[60].w].logo}
             alt=""
             width={200}
