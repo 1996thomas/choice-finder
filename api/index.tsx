@@ -9,11 +9,13 @@ const bearerToken = process.env.BEARER_TOKEN;
 const gatewayToken = process.env.GATEWAY_TOKEN;
 
 interface State {
-  userInformation: UserInformation;
-  matchData: MatchData;
+  userInformation?: UserInformation | null;
+  matchData?: MatchData | null;
 }
 
-interface UserInformation {}
+interface UserInformation {
+  data: any;
+}
 
 interface MatchData {
   ucs: Array<{
@@ -30,7 +32,7 @@ export const app = new Frog<{ State: State }>({
     userInformation: [],
     matchData: [],
   },
-  hub: pinata(),
+  //   hub: pinata(),
 });
 
 app.frame("/", (c) => {
@@ -49,31 +51,24 @@ app.frame("/", (c) => {
 });
 
 app.frame("/menu", async (c) => {
-  const { frameData } = c;
+  const { frameData, previousState } = c;
+  console.log(previousState);
   //@ts-ignore
   const { fid } = frameData;
-  let userData: UserInformation;
+  let userData: UserInformation | null = null;
+  let ipfs_pin_hash: String | null = null;
+  let matchData: MatchData | null = null;
   if (fid) {
-    try {
-      const response = await axios.get(
-        `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
-        {
-          headers: { Authorization: `Bearer ${bearerToken}` },
-        }
-      );
-      userData = response.data;
-    } catch (error) {
-      console.error(error);
-      return c.res({
-        image: (
-          <div style={{ display: "flex" }}>
-            <p style={{ color: "red" }}>Erreur lors de la requête</p>
-          </div>
-        ),
-      });
+    userData = await fetchUserData(fid);
+    previousState.userInformation = userData;
+    if (userData) {
+      ipfs_pin_hash = await fetchIPFSPinHash(userData);
+      if (ipfs_pin_hash) {
+        matchData = await fetchMatchData(ipfs_pin_hash);
+        previousState.matchData = matchData;
+      }
     }
   }
-
   return c.res({
     image: (
       <div
@@ -89,7 +84,8 @@ app.frame("/menu", async (c) => {
 });
 
 app.frame("/check", (c) => {
-    console.log(c)
+  const { previousState } = c;
+  console.log(previousState.matchData?.ucs);
   return c.res({
     image: (
       <div
@@ -98,11 +94,54 @@ app.frame("/check", (c) => {
           height: "100%",
           width: "100%",
         }}
-      ></div>
+      >
+        <p style={{ color: "white" }}>{previousState.matchData?.ucs[60].w}</p>
+      </div>
     ),
-    intents: [<Button action="/coucou">Check</Button>],
+    intents: [<Button>Salut</Button>],
   });
 });
 
+async function fetchUserData(fid: string): Promise<UserInformation | null> {
+  try {
+    const response = await axios.get(
+      `https://api.pinata.cloud/v3/farcaster/users/${fid}`,
+      {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+      }
+    );
+    return response.data; // Retournez les données utilisateur
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+async function fetchIPFSPinHash(userData: UserInformation) {
+  try {
+    const response = await axios.get(
+      `https://api.pinata.cloud/data/pinList?metadata[name]=${userData.data.username}'s choices`,
+      {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+      }
+    );
+    return response.data.rows[0].ipfs_pin_hash;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+async function fetchMatchData(ipfsHash: String) {
+  try {
+    const response = await axios.get(
+      `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
+    );
+    return response.data as MatchData;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
 export const GET = handle(app);
 export const POST = handle(app);
