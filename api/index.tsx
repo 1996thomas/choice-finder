@@ -30,7 +30,7 @@ export const app = new Frog<{ State: State }>({
     userInformation: [],
     matchData: [],
   },
-    hub: pinata(),
+  hub: pinata(),
 });
 
 app.frame("/", (c) => {
@@ -53,8 +53,6 @@ app.frame("/menu", async (c) => {
   //@ts-ignore
   const { fid } = frameData;
   let userData: UserInformation;
-  let ipfsHash: String;
-  let matchData: MatchData;
   if (fid) {
     try {
       const response = await axios.get(
@@ -73,55 +71,6 @@ app.frame("/menu", async (c) => {
           </div>
         ),
       });
-    }
-    if (userData && userData !== undefined) {
-      try {
-        const response = await axios.get(
-          `https://api.pinata.cloud/data/pinList?metadata[name]=${userData.data.username}'s choices`,
-          {
-            headers: { Authorization: `Bearer ${bearerToken}` },
-          }
-        );
-        ipfsHash = response.data.rows[0].ipfs_pin_hash;
-      } catch (error) {
-        console.log(error);
-        return c.res({
-          image: (
-            <div style={{ display: "flex", height: "100%", width: "100%" }}>
-              <img
-                src="/background.png"
-                width={1200}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                }}
-                alt=""
-              />
-              <p style={{ color: "red" }}>
-                Oops, we found no IPFS files rattached to your name
-              </p>
-            </div>
-          ),
-          intents: [
-            <Button action="/">Retry</Button>,
-            <Button.Link href="https://warpcast.com/eco/0x4ac9bc11">
-              Try it !
-            </Button.Link>,
-          ],
-        });
-      }
-      if (ipfsHash && ipfsHash !== undefined) {
-        try {
-          const response = await axios.get(
-            `https://framemadness.mypinata.cloud/ipfs/${ipfsHash}?pinataGatewayToken=${gatewayToken}`
-          );
-          matchData = response.data as MatchData;
-          console.log(matchData);
-        } catch (error) {
-          console.log(error);
-        }
-      }
     }
   }
 
