@@ -11,6 +11,7 @@ const gatewayToken = process.env.GATEWAY_TOKEN;
 interface State {
   userInformation?: UserInformation | null;
   matchData?: MatchData | null;
+  ipfs: String | null;
 }
 
 interface UserInformation {
@@ -31,6 +32,7 @@ export const app = new Frog<{ State: State }>({
   initialState: {
     userInformation: [],
     matchData: [],
+    ipfs: "",
   },
   //   hub: pinata(),
 });
@@ -51,24 +53,23 @@ app.frame("/", (c) => {
 });
 
 app.frame("/menu", async (c) => {
-  const { frameData, previousState } = c;
-  console.log(previousState);
-  //@ts-ignore
+  const { deriveState, frameData } = c;
   const { fid } = frameData;
-  let userData: UserInformation | null = null;
-  let ipfs_pin_hash: String | null = null;
-  let matchData: MatchData | null = null;
-  if (fid) {
-    userData = await fetchUserData(fid);
-    previousState.userInformation = userData;
-    if (userData) {
-      ipfs_pin_hash = await fetchIPFSPinHash(userData);
-      if (ipfs_pin_hash) {
-        matchData = await fetchMatchData(ipfs_pin_hash);
-        previousState.matchData = matchData;
+  const state = await deriveState(async (previousState) => {
+    if (fid) {
+      previousState.userInformation = await fetchUserData(fid);
+      if (previousState.userInformation?.data.username) {
+        previousState.ipfs = await fetchIPFSPinHash(
+          previousState.userInformation.data.username
+        );
+        if (previousState.ipfs) {
+          previousState.matchData = await fetchMatchData(previousState.ipfs);
+        }
       }
     }
-  }
+  });
+
+  console.log(state.matchData);
   return c.res({
     image: (
       <div
@@ -77,7 +78,11 @@ app.frame("/menu", async (c) => {
           height: "100%",
           width: "100%",
         }}
-      ></div>
+      >
+        <p style={{ color: "white" }}>{state.userInformation?.data.username}</p>
+        <p style={{ color: "white" }}>{state.ipfs}</p>
+        <p style={{ color: "white" }}>{state.matchData?.ucs[60].w}</p>
+      </div>
     ),
     intents: [<Button action="/check">Check</Button>],
   });
@@ -117,10 +122,10 @@ async function fetchUserData(fid: string): Promise<UserInformation | null> {
   }
 }
 
-async function fetchIPFSPinHash(userData: UserInformation) {
+async function fetchIPFSPinHash(username: any) {
   try {
     const response = await axios.get(
-      `https://api.pinata.cloud/data/pinList?metadata[name]=${userData.data.username}'s choices`,
+      `https://api.pinata.cloud/data/pinList?metadata[name]=${username}'s choices`,
       {
         headers: { Authorization: `Bearer ${bearerToken}` },
       }
