@@ -34,7 +34,7 @@ export const app = new Frog<{ State: State }>({
     matchData: [],
     ipfs: "",
   },
-  //   hub: pinata(),
+    hub: pinata(),
 });
 
 app.frame("/", (c) => {
