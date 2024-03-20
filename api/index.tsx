@@ -84,10 +84,23 @@ app.frame("/menu", async (c) => {
         }}
       ></div>
     ),
-    intents: [
-      <Button action="/check">Check</Button>,
-      <Button.Link href="/">Try it</Button.Link>,
-    ],
+    intents: [<Button action="/check">Check</Button>],
+  });
+});
+
+app.frame("/check", (c) => {
+    console.log(c)
+  return c.res({
+    image: (
+      <div
+        style={{
+          display: "flex",
+          height: "100%",
+          width: "100%",
+        }}
+      ></div>
+    ),
+    intents: [<Button action="/coucou">Check</Button>],
   });
 });
 
