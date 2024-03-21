@@ -1,0 +1,33 @@
+interface TeamInfo {
+  logo: string;
+  name: string;
+}
+
+interface PinListResponse {
+  rows: Array<{
+    ipfs_pin_hash: string;
+  }>;
+}
+
+interface TeamsData {
+  [key: string]: TeamInfo;
+}
+
+interface Match {
+  w: string; // L'identifiant de l'équipe gagnante
+  m?: string; // Vous aviez cela dans votre interface, mais vous ne l'utilisez pas dans l'exemple donné
+}
+
+interface MatchData {
+  ucs: Match[];
+}
+
+interface State {
+  matchDataArr: MatchData | null;
+}
+
+interface UserData {
+  data: {
+    username: string;
+  };
+}
