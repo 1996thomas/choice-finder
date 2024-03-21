@@ -298,7 +298,7 @@ const regionColor = {
 export const app = new Frog<{ State: State }>({
   assetsPath: "/",
   basePath: "/api",
-  browserLocation: "/",
+  browserLocation: "https://framemadness.vercel.app/",
   initialState: {
     userInformation: [],
     matchData: [],
